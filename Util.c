@@ -5,6 +5,10 @@ void erro( const char *mensagem ){
   printf("\n\033[31mErro: %s\033[0m\n", mensagem);
 }
 
+void exito ( cost char *mensagem){
+  printf("\n\033[32%s033[0m\n")
+}
+
 void *mallocSafe(size_t nbytes) {
 
   if (nbytes <= 0) {

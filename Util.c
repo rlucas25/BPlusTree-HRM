@@ -1,27 +1,30 @@
 #include "Util.h"
 
+void erro(const char *mensagem) {
 
-void erro( const char *mensagem ){
-  printf("\n\033[31mErro: %s\033[0m\n", mensagem);
+    // exibe mensagem de erro formatada
+    printf("\n\033[31mErro: %s\033[0m\n", mensagem);
 }
 
-void exito ( cost char *mensagem){
-  printf("\n\033[32%s033[0m\n")
+void exito(const char *mensagem) {
+
+    // exibe mensagem de sucesso formatada
+    printf("\n\033[32m%s\033[0m\n", mensagem);
 }
 
 void *mallocSafe(size_t nbytes) {
 
-  if (nbytes <= 0) {
-    erro("Tentativa de alocar tamanho invalido (zero ou negativo)");
-    exit(1);
-  }
+    // Verifica se o tamanho solicitado é válido (maior que zero)
+    if (nbytes <= 0) {
+        erro("Tentativa de alocar tamanho invalido (zero ou negativo)");
+        exit(1);
+    }
+    void *ptr = malloc(nbytes);
 
-  void *ptr = malloc(nbytes);
+    if (ptr == NULL) {
+        erro("Alocação de memoria");
+        exit(1);
+    }
 
-  if (ptr == NULL) {
-    erro("Alocação de memoria");
-    exit(1);
-  }
-
-  return ptr;
+    return ptr;
 }

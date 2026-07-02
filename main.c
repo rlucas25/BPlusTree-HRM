@@ -4,26 +4,33 @@
 int main() {
 
     int opcao;
+    CabecalhoBPlus *cabecalho = mallocSafe(sizeof(CabecalhoBPlus));
+    FILE *arquivo             = NULL;
     // Cria a arvore B+ para armazenar os funcionarios, caso ela não exista e abre
     // o arquivo para manipulação
-    
-    criaArvore(NOME_ARQUIVO, ORDEM_P, sizeof(Chave), sizeof(Funcionario));
-    CabecalhoBPlus *cabecalho = mallocSafe(sizeof(CabecalhoBPlus));
-    FILE *arquivo             = abrirArvore(NOME_ARQUIVO, cabecalho);
+    FILE *testeExistencia = fopen(NOME_ARQUIVO, "rb");
+    if (!testeExistencia) {
+        criaArvore(NOME_ARQUIVO, ORDEM_P, sizeof(Chave), sizeof(Funcionario));
+    } else {
+        exito("Arquivo de funcionarios existente, abrindo...");
+        fclose(testeExistencia);
+    }
+    arquivo = abrirArvore(NOME_ARQUIVO, cabecalho);
 
     do {
-        printf("\n\t=== MENU ===\n"
-               "\t1. Inserir Funcionário\n"
-               "\t2. Buscar Funcionário\n"
-               "\t3. Excluir Funcionário\n"
-               "\t4. Listagem por Intervalo\n"
-               "\t5. Exibir Estrutura do Índice\n"
-               "\t6. Sair\n");
+        printf("\n\t===== MENU =====\n"
+               "1. Inserir Funcionário\n"
+               "2. Buscar Funcionário\n"
+               "3. Excluir Funcionário\n"
+               "4. Listagem por Intervalo\n"
+               "5. Exibir Estrutura do Índice\n"
+               "6. Sair\n");
 
         printf(">> ");
         scanf("%d", &opcao);
         // utilizado para limpar o buffer
-        while (getchar() != '\n');
+        while (getchar() != '\n')
+            ;
 
         switch (opcao) {
         case 1:

@@ -4,16 +4,16 @@ void imprimeData(Data data) { printf("%d/%d/%d", data.dia, data.mes, data.ano); 
 
 void imprimeChave(void *f) {
 
-    Funcionario funcionario = *(Funcionario *)f;
-    printf("[ Nome: %s | Data de nascimento: ", funcionario.Nome);
-    imprimeData(funcionario.dataNascimento);
+    Chave *chave = (Chave *)f;
+    printf("[ Nome: %s | Data de nascimento: ", chave->Nome);
+    imprimeData(chave->dataNascimento);
     printf(" ]");
 }
 
 void imprimeFuncionario(Funcionario funcionario) {
 
     // Formatação da impreção dos dados.
-    printf("\n| Pai: %s\n | Mãe: %s\n", funcionario.filicao.mae, funcionario.filicao.pai);
+    printf("\n| Pai: %s\n| Mãe: %s\n", funcionario.filicao.mae, funcionario.filicao.pai);
     printf("| Dados Contratuais:\n");
     printf("|\t Data de Contratação: ");
     imprimeData(funcionario.dadosContratuais.dataContratacao);
@@ -30,7 +30,7 @@ void imprimeFuncionario(Funcionario funcionario) {
         printf("\n");
     }
     // Formatação do resto das impressoes dos dados.
-    printf("| Dados de contato: ");
+    printf("| Dados de contato:\n");
     printf("|\t Endereco: %s\n", funcionario.dadosContato.endereco);
     printf("|\t Telefone: %s\n", funcionario.dadosContato.telefone);
     printf("| Historico de pagamentos: | ");
@@ -39,31 +39,30 @@ void imprimeFuncionario(Funcionario funcionario) {
     }
     printf("\n");
 }
-bool confereData(Data data){
-  if(data.dia < 1 || data.dia > 31 || data.mes < 1 || data.mes > 12 || data.ano > 2026){
-    return false;
-  }
-  if ((data.mes == 4 || data.mes == 6 || data.mes == 9 || data.mes == 11) && data.dia > 30) {
-    return false;
-  }
-  if (data.mes == 2) {
-    if ((data.ano % 4 == 0 && data.ano % 100 != 0) || (data.ano % 400 == 0)) {
-      if (data.dia > 29) {
+bool confereData(Data data) {
+    if (data.dia < 1 || data.dia > 31 || data.mes < 1 || data.mes > 12 || data.ano > 2026) {
         return false;
-      }
-    } else {
-      if (data.dia > 28) {
-        return false;
-      }
     }
-  }
-  if (data.ano == 2026 && data.mes > 7) {
-    return false;
-  }
+    if ((data.mes == 4 || data.mes == 6 || data.mes == 9 || data.mes == 11) && data.dia > 30) {
+        return false;
+    }
+    if (data.mes == 2) {
+        if ((data.ano % 4 == 0 && data.ano % 100 != 0) || (data.ano % 400 == 0)) {
+            if (data.dia > 29) {
+                return false;
+            }
+        } else {
+            if (data.dia > 28) {
+                return false;
+            }
+        }
+    }
+    if (data.ano == 2026 && data.mes > 7) {
+        return false;
+    }
 
-  return true;
+    return true;
 }
-
 
 int comparaNome(void *a, void *b) {
     // Variaveis para fazer a comparação depois
@@ -124,14 +123,14 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("Digite o nome do funcionario:");
     fgets(funcionario.Nome, RH_TAM_NOME, stdin);
     funcionario.Nome[strcspn(funcionario.Nome, "\n")] = '\0';
-    
+
     // recebe os dados cadastrais do funcionario;
     while (1) {
         printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
         scanf("%d/%d/%d", &funcionario.dataNascimento.dia, &funcionario.dataNascimento.mes,
-                  &funcionario.dataNascimento.ano);
+              &funcionario.dataNascimento.ano);
         bool dataValida = confereData(funcionario.dataNascimento);
-        
+
         if (dataValida) {
             break; // Sai do loop se a data for válida
         } else {
@@ -140,7 +139,8 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     }
 
     // utilizado para limpar o buffer
-    while (getchar() != '\n');
+    while (getchar() != '\n')
+        ;
 
     printf("Digite o nome do pai do funcionario:");
     fgets(funcionario.filicao.pai, RH_TAM_NOME, stdin);
@@ -159,14 +159,15 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     funcionario.dadosContato.telefone[strcspn(funcionario.dadosContato.telefone, "\n")] = '\0';
 
     printf("Digite a data de contratacao do funcionario \n");
-    
-     while (1) {
+
+    while (1) {
         printf("Digite a data de contratacao do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataContratacao.dia, &funcionario.dadosContratuais.dataContratacao.mes,
-                  &funcionario.dadosContratuais.dataContratacao.ano);
-        
+        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataContratacao.dia,
+              &funcionario.dadosContratuais.dataContratacao.mes,
+              &funcionario.dadosContratuais.dataContratacao.ano);
+
         bool dataValida = confereData(funcionario.dadosContratuais.dataContratacao);
-        
+
         if (dataValida) {
             break; // Sai do loop se a data for válida
         } else {
@@ -177,13 +178,14 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("Digite o status de atividade do funcionario (1 para ativo, 0 para inativo): ");
     int aux = 0;
     scanf("%d", &aux);
-    
+
     funcionario.dadosContratuais.statusAtividade = aux > 0 ? true : false;
 
     if (funcionario.dadosContratuais.statusAtividade == 0) {
         printf("Digite a data de desligamento do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataDesligamento.dia, &funcionario.dadosContratuais.dataDesligamento.mes,
-                  &funcionario.dadosContratuais.dataDesligamento.ano);
+        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataDesligamento.dia,
+              &funcionario.dadosContratuais.dataDesligamento.mes,
+              &funcionario.dadosContratuais.dataDesligamento.ano);
     } else {
         funcionario.dadosContratuais.dataDesligamento.dia = 0;
         funcionario.dadosContratuais.dataDesligamento.mes = 0;
@@ -195,7 +197,8 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         scanf("%f", &funcionario.historicoPagamentos[i]);
     }
     // utilizado para limpar o buffer
-    while (getchar() != '\n');
+    while (getchar() != '\n')
+        ;
 
     // se utiliza da função insereChave para inserir e verificar a possibilidade
     // de inserção, retornado TRUE, se foi bem sucedida, e FALSE, se mal sucedida
@@ -204,13 +207,14 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     chaveFuncionario.dataNascimento.dia = funcionario.dataNascimento.dia;
     chaveFuncionario.dataNascimento.mes = funcionario.dataNascimento.mes;
     chaveFuncionario.dataNascimento.ano = funcionario.dataNascimento.ano;
-    encontrou = insereChave(arquivo, cabecalho, &chaveFuncionario, &funcionario, comparaChaveFuncionario);
+    encontrou =
+        insereChave(arquivo, cabecalho, &chaveFuncionario, &funcionario, comparaChaveFuncionario);
 
     // retorna uma mensagem de exito, se utilizando da função exito, para exibir
     // a mensagem de sucesso ao usuario.
     if (encontrou) {
         exito("Funcionario cadastrado com sucesso!");
-    } else{
+    } else {
         erro("Não foi possível cadastrar.");
     }
 }
@@ -228,9 +232,9 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     while (1) {
         printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
         scanf("%d/%d/%d", &funcionario.dataNascimento.dia, &funcionario.dataNascimento.mes,
-                  &funcionario.dataNascimento.ano);
+              &funcionario.dataNascimento.ano);
         bool dataValida = confereData(funcionario.dataNascimento);
-        
+
         if (dataValida) {
             break; // Sai do loop se a data for válida
         } else {
@@ -258,24 +262,23 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 int auxBusca(FILE *arquivo, CabecalhoBPlus *cabecalho, Chave *chaveA, Chave *chaveB,
              bool impressaoCompleta, int compara(void *a, void *b)) {
     long caminho[50];
-    int tam_caminho[1]     = {0};
+    int tam_caminho        = 0;
     int qtdChavesImpressas = 0;
-    bool encontrou      = false;
-    long posPag = Nulo;
+    bool encontrou         = false;
+    long posPag            = Nulo;
 
     // utiliza a função buscarChave para encontrar a posição da pagina desejada
-    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara,
-                                caminho, tam_caminho);      
+    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
 
     // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
     if (posPag == Nulo || posPag == -1) {
         erro("Árvore vazia ou erro na busca.\n");
         return 0;
     }
-    // if (!encontrou || posPag == -1) {
-    //      erro("Chave não encontrada na árvore.\n");
-    //      return 0;
-    // }
+    if (!encontrou || posPag == -1) {
+        erro("Chave não encontrada na árvore.\n");
+        return 0;
+    }
     Funcionario funcionarioAtual;
 
     // percorre as folhas da arvoreB+.
@@ -295,6 +298,9 @@ int auxBusca(FILE *arquivo, CabecalhoBPlus *cabecalho, Chave *chaveA, Chave *cha
                 posPag = Nulo;
                 break;
             }
+            if ( compara(chaveAtual, chaveA) < 0) {
+                continue;
+            }
 
             // Guarda local atual em funcionarioAtual.
             funcionarioAtual =
@@ -313,13 +319,17 @@ int auxBusca(FILE *arquivo, CabecalhoBPlus *cabecalho, Chave *chaveA, Chave *cha
         if (posPag != Nulo) {
             posPag = paginaAtual.proximaFolha;
         }
-        
+
         free(paginaAtual.chaves);
         free(paginaAtual.ponteiros);
     }
-
-    if (qtdChavesImpressas == 1 && !impressaoCompleta) {
-        imprimeFuncionario(funcionarioAtual);
+    if (!impressaoCompleta) {
+        if (qtdChavesImpressas == 1) {
+            imprimeFuncionario(funcionarioAtual);
+        }
+        else {
+            printf("\n");
+        }
     }
     return qtdChavesImpressas;
 }
@@ -351,10 +361,10 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("Digite o nome do funcionario que deseja buscar: ");
     fgets(chaveA.Nome, RH_TAM_NOME, stdin);
     chaveA.Nome[strcspn(chaveA.Nome, "\n")] = '\0';
-    chaveA.dataNascimento.dia = 0;
-    chaveA.dataNascimento.mes = 0;
-    chaveA.dataNascimento.ano = 0;
-
+    chaveA.dataNascimento.dia               = 0;
+    chaveA.dataNascimento.mes               = 0;
+    chaveA.dataNascimento.ano               = 0;
+    printf("\n");
     int qtdChaves = auxBusca(arquivo, cabecalho, &chaveA, &chaveA, false, comparaNome);
 
     if (qtdChaves == 0) {

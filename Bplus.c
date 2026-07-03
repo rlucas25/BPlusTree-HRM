@@ -43,8 +43,11 @@ bool criaArvore(const char *nomeArquivo, int ordem, size_t tamanhoChave, size_t 
     cabecalho.tamanhoRegistro = tamanhoRegistro;
     cabecalho.proxNolivre     = Nulo;
 
+    // move o ponteiro do arquivo para o inicio
     fseek(arquivo, 0, SEEK_SET);
+    // grava o cabecalho no arquivo
     size_t gravados = fwrite(&cabecalho, sizeof(CabecalhoBPlus), 1, arquivo);
+    // fecha o arquivo para salvar informações
     fclose(arquivo);
     return (gravados > 0);
 }
@@ -62,6 +65,8 @@ FILE *abrirArvore(const char *nomeArquivo, CabecalhoBPlus *cabecalho) {
         erro("Não foi possivel abrir arquivo em abrirArvore");
         return NULL;
     }
+
+    // move o ponteiro para a posição inicial do arquivo
     fseek(arquivo, 0, SEEK_SET);
     fread(cabecalho, sizeof(CabecalhoBPlus), 1, arquivo);
 
@@ -84,7 +89,7 @@ PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalh
     // Faz o cursor do arquivo apontar para onde a página vai ser salva
     fseek(arquivo, offset, SEEK_SET);
     // Faz a leitura dos dados da página
-    fread(&pagina.qtdChaves, sizeof(int), 1, arquivo);
+    fread(&pagina.qtdChaves, sizeof(long), 1, arquivo);
     fread(&pagina.ehfolha, sizeof(bool), 1, arquivo);
     fread(&pagina.proximaFolha, sizeof(long), 1, arquivo);
     // Aloca um espaço na memória RAM para salvar as chaves no disco
@@ -105,6 +110,8 @@ PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalh
     if (!pagina.ponteiros) {
         erro("Falha de alocacao para ponteiros em le_pagina_disco\n");
         free(pagina.chaves);
+        pagina.chaves = NULL;
+        pagina.qtdChaves = 0;
         return pagina;
     }
 
@@ -128,19 +135,35 @@ PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalh
 
 bool escreve_pagina_disco(FILE *arquivo, long offset, PaginaBPlus *pagina,
                           CabecalhoBPlus *cabecalho) {
+
+    // Imprime para o usuário a posição onde está sendo escrita a página no disco.
+    // Juntamente a isso, explicita se é folha e sua quantidade de chaves.
     printf("Escrevendo pagina na posicao: %ld (Eh folha? %s | Qtd Chaves: %ld)\n", offset,
            pagina->ehfolha ? "SIM" : "NAO", pagina->qtdChaves);
+
+    // Coloca o cursor do arquivo de acordo com o offset, ou seja, posição
+    // onde está sendo inserida a página.
     fseek(arquivo, offset, SEEK_SET);
-    fwrite(&pagina->qtdChaves, sizeof(int), 1, arquivo);
+
+    // Com a posição definida, escreve no disco as informações da página, quantidade de chaves,
+    // se é folha e o espaço para o ponteiro de próxima folha.
+    // Sabemos que, caso não seja folha, não importa esse ponteiro, porém é importante que esse
+    // espaço esteja alocado, garantindo que a página tenha o espaço fixo.
+    fwrite(&pagina->qtdChaves, sizeof(long), 1, arquivo);
     fwrite(&pagina->ehfolha, sizeof(bool), 1, arquivo);
     fwrite(&pagina->proximaFolha, sizeof(long), 1, arquivo);
 
+    // Grava o vetor de chaves da página no arquivo, com tamanho referente
+    // ao número máximo de chaves e o tamanho de cada chave.
     fwrite(pagina->chaves, cabecalho->tamanhoChave, maxChavesPagina(cabecalho, pagina->ehfolha),
            arquivo);
 
+    // Caso a página seja nó folha, seus ponteiros são salvos no disco com tamanho de registro
+    // ou seja, o tamanho dos dados do sistema em si.
     if (pagina->ehfolha) {
         fwrite(pagina->ponteiros, cabecalho->tamanhoRegistro,
                maxChavesPagina(cabecalho, pagina->ehfolha) + 1, arquivo);
+        // Do contrário, são salvos com tamanho de long, apontando para páginas filhas.
     } else {
         fwrite(pagina->ponteiros, sizeof(long), maxChavesPagina(cabecalho, pagina->ehfolha) + 1,
                arquivo);
@@ -208,8 +231,89 @@ long buscarChave(FILE *arquivoAberto, bool *encontrou, CabecalhoBPlus *cabecalho
     return -1;
 }
 
-PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, PaginaBPlus *paginaPai, CabecalhoBPlus *cabecalho,
-                         void *chavePromovida) {
+int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprimeChave(void *a),
+                       void imprimeRegistro(void *a), bool imprimeCompleta) {
+
+    if (!arquivo || !cabecalho || !chaveA || !chaveB || !compara || !imprimeChave ||
+        !imprimeRegistro) {
+        erro("Parametros invalidos passados para buscarPorIntervalo");
+        return -1;
+    }
+
+    long caminho[50];
+    int tam_caminho        = 0;
+    int qtdChavesImpressas = 0;
+    bool encontrou         = false;
+    long posPag            = Nulo;
+
+    // utiliza a função buscarChave para encontrar a posição da pagina desejada
+    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
+
+    // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
+    if (posPag == Nulo || posPag == -1) {
+        erro("Árvore vazia ou erro na busca.\n");
+        return 0;
+    }
+    char registroAux[cabecalho->tamanhoRegistro];
+
+    PaginaBPlus paginaAtual;
+
+    // percorre as folhas da arvoreB+.
+    while (posPag != Nulo) {
+
+        // lê o disco se utilizando da função le_pagina_disco.
+        paginaAtual = le_pagina_disco(arquivo, posPag, cabecalho);
+
+        // percorre todas as chaves da folha atual
+        for (int i = 0; i < paginaAtual.qtdChaves; i++) {
+
+            // calcula o endereço da chave que esta na posição i da folha
+            void *chaveAtual = (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave);
+
+            // se a chave atual extrapolou o limite, parar a leitura.
+            if (compara(chaveAtual, chaveB) > 0) {
+                posPag = Nulo;
+                break;
+            }
+            if (compara(chaveAtual, chaveA) < 0) {
+                continue;
+            }
+
+            // Guarda local atual do registro.
+            void *registroAtual = ((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
+
+            qtdChavesImpressas++;
+            memcpy(registroAux,registroAtual,cabecalho->tamanhoRegistro);
+            // imprime os dados da chave
+            if (imprimeCompleta) {
+                imprimeChave(chaveAtual);
+                imprimeRegistro(registroAtual);
+            } else {
+                imprimeChave(chaveAtual);
+            }
+        }
+        
+        
+        if (posPag != Nulo) {
+            posPag = paginaAtual.proximaFolha;
+        }
+        if (paginaAtual.chaves)
+            free(paginaAtual.chaves);
+        if (paginaAtual.ponteiros)
+            free(paginaAtual.ponteiros);
+    }
+    
+    if (!imprimeCompleta && qtdChavesImpressas == 1) {
+        imprimeRegistro((void *)registroAux);
+    }
+    printf("\n");
+    
+    
+    return qtdChavesImpressas;
+}
+
+PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, CabecalhoBPlus *cabecalho, void *chavePromovida) {
 
     PaginaBPlus *novaPagina;
     int totalChaves;
@@ -236,21 +340,21 @@ PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, PaginaBPlus *paginaPai, CabecalhoB
             mallocSafe((maxChavesPagina(cabecalho, novaPagina->ehfolha) + 1) * sizeof(long));
     }
 
-    // Pagina em overflow: qtdChaves == ordem + 1 (indices 0..ordem)
+    // Encontrar o indéx da chave meio da página para realizar a cisao.
     totalChaves = pagina->qtdChaves;
     meioIndex   = totalChaves / 2;
 
     if (pagina->ehfolha) {
-        // Quando é folha, a cisão é diferente do que quando é página interna,
-        // Em folhas a chave do meio não é removida, então ela é duplicada, ficando como a primeira
-        // chave da nova pagina da direita e tambem sobe pro pai.
+        // Quando é folha a chave meio não é removida, então ela é duplicada, ficando como a
+        // primeira chave da nova pagina da direita e tambem sobe pro pai.
         memcpy(chavePromovida, (char *)pagina->chaves + (meioIndex * cabecalho->tamanhoChave),
                cabecalho->tamanhoChave);
-
+        // Faz a cópia incluindo a chave do meio para a nova página e ponteiros dos registros.
         for (i = meioIndex; i < totalChaves; i++) {
+            // Cópia das chaves.
             memcpy((char *)novaPagina->chaves + (novaPagina->qtdChaves * cabecalho->tamanhoChave),
                    (char *)pagina->chaves + (i * cabecalho->tamanhoChave), cabecalho->tamanhoChave);
-
+            // Cópia dos ponteiros.
             memcpy((char *)novaPagina->ponteiros +
                        (novaPagina->qtdChaves * cabecalho->tamanhoRegistro),
                    (char *)pagina->ponteiros + (i * cabecalho->tamanhoRegistro),
@@ -262,19 +366,20 @@ PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, PaginaBPlus *paginaPai, CabecalhoB
         pagina->qtdChaves = meioIndex;
 
     } else {
-        // Quando é página interna, a cisão é diferente da folha,
-        // Aqui a chave do meio é removida do nó e sobe sozinha para o pai.
+        // Quando é página interna, a chave do meio é removida do nó e sobe sozinha para o pai.
         memcpy(chavePromovida, (char *)pagina->chaves + (meioIndex * cabecalho->tamanhoChave),
                cabecalho->tamanhoChave);
 
-        // Aqui faz a copia das chaves a direita da chave promovida
+        // Aqui faz a copia das chaves a direita da chave promovida na nova página, ignorando a
+        // chave do meio, pois ele vai subir para o pai.
         for (i = meioIndex + 1; i < totalChaves; i++) {
             memcpy((char *)novaPagina->chaves + (novaPagina->qtdChaves * cabecalho->tamanhoChave),
                    (char *)pagina->chaves + (i * cabecalho->tamanhoChave), cabecalho->tamanhoChave);
             novaPagina->qtdChaves++;
         }
 
-        // Aqui também faz copia, mas para  filhos correspondentes.
+        // Aqui também faz copia, porém para os ponteiros, resetando os ponteiros para na nova
+        // página que estava 3,4,5 para 0,1,2
         for (i = meioIndex + 1; i <= totalChaves; i++) {
             memcpy((char *)novaPagina->ponteiros + ((i - meioIndex - 1) * sizeof(long)),
                    (char *)pagina->ponteiros + (i * sizeof(long)), sizeof(long));
@@ -283,42 +388,37 @@ PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, PaginaBPlus *paginaPai, CabecalhoB
         pagina->qtdChaves = meioIndex;
     }
 
-    // NAO insere chavePromovida em paginaPai aqui: quem faz isso, de forma
-    // ordenada (deslocando chaves/ponteiros), e o insereChave logo depois
-    // de chamar essa funcao. Inserir aqui tambem causava chave duplicada
-    // e qtdChaves incrementado duas vezes no pai.
-    (void)paginaPai;
-
     return novaPagina;
 }
 
-// Aloca uma posicao no disco para uma nova pagina, reaproveitando o
-// espaco livre deixado por remocoes (lista encadeada via proxNolivre)
-// antes de crescer o arquivo. Isso evita que o arquivo so aumente de
-// tamanho e nunca reutilize os "buracos" deixados por BalancearArvoreUnderflow.
+// Serve para encontrar a posição em que será colocado a próxima página, decidindo se vai para
+// proximo nó livre salvo no cabeçalho ou se adiciona normalmente se não tiver livre
 long alocarPagina(FILE *arquivoAberto, CabecalhoBPlus *cabecalho) {
     long posNova;
 
     if (cabecalho->proxNolivre != Nulo) {
-        // Reaproveita o primeiro no livre da lista encadeada.
+
+        // Reaproveita o no livre da lista encadeada salva no cabeçalho (o último removido).
         posNova = cabecalho->proxNolivre;
 
-        // A pagina livre guarda, no campo proximaFolha, o offset do
-        // proximo no livre da lista (ou Nulo se for o ultimo).
+        // Faz a leitura para recuparar os dados do nó apagado, pois lá tem qual é o prox nó livre
+        // salvo.
         PaginaBPlus paginaLivre = le_pagina_disco(arquivoAberto, posNova, cabecalho);
-        cabecalho->proxNolivre  = paginaLivre.proximaFolha;
+
+        // Repassa para o cabeçalho o a posição do nó livre para registro que estava salvo
+        // ou o nulo se não tinha nenhum nó livre anterior.
+        cabecalho->proxNolivre = paginaLivre.proximaFolha;
 
         free(paginaLivre.chaves);
         free(paginaLivre.ponteiros);
     } else {
-        // Lista de livres vazia: cresce o arquivo normalmente.
+
+        // Se não tiver nó livre, ele faz da maneira normal.
         fseek(arquivoAberto, 0, SEEK_END);
         posNova = ftell(arquivoAberto);
     }
 
-    // Persiste imediatamente o cabecalho, pois proxNolivre pode ter
-    // mudado aqui e o insereChave nem sempre reescreve o cabecalho no
-    // disco antes de retornar (só reescrevia no caso de nova raiz).
+    // Atualiza o cabeçalho com o novo nó livre.
     fseek(arquivoAberto, 0, SEEK_SET);
     fwrite(cabecalho, sizeof(CabecalhoBPlus), 1, arquivoAberto);
 
@@ -427,16 +527,17 @@ bool insereChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave, co
 
     long posNovaPaginaDireita = Nulo;
 
-    // Verifica se há overflow, ou seja, se estourou a capacidade da página. Se sim, realiza o
-    // processo de cisão de baixo para cima.
+    // Enquanto houver overflow, ou seja, a quantidade de chaves
+    // for maior que o a ordem, realiza o processo de cisão de baixo para cima.
     while (paginaAtual.qtdChaves > cabecalho->ordemP - 1) {
         PaginaBPlus paginaPai;
         PaginaBPlus *novaPagina = NULL;
         long posPai             = Nulo;
 
-        // Se indexCaminho == 0, a raiz estourou, e será necessário
-        // um novo nó pai, ou seja, uma nova raiz.
+        // Se indexCaminho < 0, significa que a raiz principal estourou, será necessário
+        // um novo nó pai, ou seja, uma nova raiz para a árvore. A altura da árvore aumenta em 1.
         if (indexCaminho < 0) {
+            // Inicializa paginaPai e aloca suas chaves e ponteiros.
             paginaPai.ehfolha      = false;
             paginaPai.qtdChaves    = 0;
             paginaPai.proximaFolha = Nulo;
@@ -457,10 +558,10 @@ bool insereChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave, co
         // Divide-se a página atual ao meio por meio da cisão,
         // novaPagina recebe a metade direita e chave promovida
         // se recebe o elemento do meio.
-        novaPagina = cisaoPagina(&paginaAtual, &paginaPai, cabecalho, chavePromovida);
+        novaPagina = cisaoPagina(&paginaAtual, cabecalho, chavePromovida);
 
-        // Garante que a nova página criada a direita seja sempre
-        // escrita ao fim do arquivo, preservando outros dados.
+        // Serve para conseguir a posição que vai colocar a página garantindo que será salvo em um
+        // nó livre ou no final.
         posNovaPaginaDireita = alocarPagina(arquivoAberto, cabecalho);
 
         // Atualiza a lista encadeada de folhas.
@@ -702,6 +803,7 @@ void concatenacao(FILE *arquivo, PaginaBPlus *atual, PaginaBPlus *irmao, const v
 
 bool removeChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave,
                  int (*comparaChaves)(void *x, void *y)) {
+
     if (!arquivoAberto || !cabecalho || !chave || !comparaChaves) {
         erro("Parametros invalidos passados para removeChave");
         return false;
@@ -719,6 +821,7 @@ bool removeChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave,
                                 &tam_caminho);
     // caso não tenha encontrado a chave, ela não existe na árvore
     if (!encontrou || posFolha == -1) {
+        erro("Chave não encontrada");
         return false;
     }
     // Agora caso encontrou, faz a leitura da pagina do disco e carrega tudo da
@@ -1097,14 +1200,14 @@ void imprimePagina(PaginaBPlus pagina, CabecalhoBPlus *cabecalho,
     printf("]");
 }
 
-void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posisaoPagina, const char *prefixo,
+void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posicaoPagina, const char *prefixo,
                   bool ehUltimo, void (*imprimeChave)(void *chave)) {
 
-    if (posisaoPagina == Nulo) {
+    if (posicaoPagina == Nulo) {
         return;
     }
 
-    PaginaBPlus pagina = le_pagina_disco(arquivo, posisaoPagina, cabecalho);
+    PaginaBPlus pagina = le_pagina_disco(arquivo, posicaoPagina, cabecalho);
 
     printf("%s", prefixo);
 
@@ -1142,4 +1245,89 @@ void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posisaoPagina, 
         free(pagina.chaves);
     if (pagina.ponteiros)
         free(pagina.ponteiros);
+}
+
+
+int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprimeChave(void *a),
+                       void imprimeRegistro(void *a), bool imprimeCompleta, void *registroEncontrado) {
+
+    if (!arquivo || !cabecalho || !chaveA || !chaveB || !compara || !imprimeChave ||
+        !imprimeRegistro) {
+        erro("Parametros invalidos passados para buscarPorIntervalo");
+        return -1;
+    }
+
+    long caminho[50];
+    int tam_caminho        = 0;
+    int qtdChavesImpressas = 0;
+    bool encontrou         = false;
+    long posPag            = Nulo;
+
+    // utiliza a função buscarChave para encontrar a posição da pagina desejada
+    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
+
+    // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
+    if (posPag == Nulo || posPag == -1) {
+        erro("Árvore vazia ou erro na busca.\n");
+        return 0;
+    }
+    char registroAux[cabecalho->tamanhoRegistro];
+
+    PaginaBPlus paginaAtual;
+
+    // percorre as folhas da arvoreB+.
+    while (posPag != Nulo) {
+
+        // lê o disco se utilizando da função le_pagina_disco.
+        paginaAtual = le_pagina_disco(arquivo, posPag, cabecalho);
+
+        // percorre todas as chaves da folha atual
+        for (int i = 0; i < paginaAtual.qtdChaves; i++) {
+
+            // calcula o endereço da chave que esta na posição i da folha
+            void *chaveAtual = (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave);
+
+            // se a chave atual extrapolou o limite, parar a leitura.
+            if (compara(chaveAtual, chaveB) > 0) {
+                posPag = Nulo;
+                break;
+            }
+            if (compara(chaveAtual, chaveA) < 0) {
+                continue;
+            }
+
+            // Guarda local atual do registro.
+            void *registroAtual = ((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
+
+            qtdChavesImpressas++;
+            memcpy(registroAux,registroAtual,cabecalho->tamanhoRegistro);
+            // imprime os dados da chave
+            if (imprimeCompleta) {
+                imprimeChave(chaveAtual);
+                imprimeRegistro(registroAtual);
+            } else {
+                imprimeChave(chaveAtual);
+            }
+        }
+        
+        
+        if (posPag != Nulo) {
+            posPag = paginaAtual.proximaFolha;
+        }
+        if (paginaAtual.chaves)
+            free(paginaAtual.chaves);
+        if (paginaAtual.ponteiros)
+            free(paginaAtual.ponteiros);
+    }
+    
+    if (!imprimeCompleta && qtdChavesImpressas == 1) {
+        imprimeRegistro((void *)registroAux);
+        if (registroEncontrado)
+        memcpy(registroEncontrado, registroAux, cabecalho->tamanhoRegistro);
+    }
+    printf("\n");
+    
+    
+    return qtdChavesImpressas;
 }

@@ -57,15 +57,18 @@ void imprimeData(Data data);
 
 // Imprime o nome e a data de nascimento do funcionário
 void imprimeChave(void *f);
-
+void imprimeChavePrimeiroNome(void *f);
 // Imprime todas as informações do funcionário
-void imprimeFuncionario(Funcionario funcionario);
+void imprimeFuncionario(void *f);
 
 // Compara dois funcionários com base no nome
 int comparaNome(void *a, void *b);
 
 // Compara dois funcionario com base no nome e data de nascimento
 int comparaChaveFuncionario(void *a, void *b);
+
+// Confere e valores de data recebidos pelo usuario
+bool confereData(Data data);
 
 // cadastra funcionario com dados inserido pelo usuario, tambem verificando se
 // ja existe
@@ -78,9 +81,10 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho);
 // Lê o nome do funcionarios e busca os funcionários dentro deste intervalo de
 // nomes,
 //  por fim imprime as informações dos funcionários encontrados
-void buscaIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho);
+void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho);
 
 // Busca um funcionário específico com base no nome
 void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho);
+void imprimeArvoreFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho);
 
 #endif

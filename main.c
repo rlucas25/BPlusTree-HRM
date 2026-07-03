@@ -29,8 +29,7 @@ int main() {
         printf(">> ");
         scanf("%d", &opcao);
         // utilizado para limpar o buffer
-        while (getchar() != '\n')
-            ;
+        while (getchar() != '\n');
 
         switch (opcao) {
         case 1:
@@ -44,14 +43,12 @@ int main() {
             break;
         case 4:
             char inicioIntervalo[RH_TAM_NOME], fimIntervalo[RH_TAM_NOME];
-            buscaIntervalo(arquivo, cabecalho);
+            buscaIntervaloFuncionario(arquivo, cabecalho);
 
             break;
         case 5:
-            bool ehUltimo      = false;
-            char prefixo[100]  = "";
-            long posisaoPagina = cabecalho->posRaiz;
-            imprimeBPlus(arquivo, cabecalho, posisaoPagina, prefixo, ehUltimo, imprimeChave);
+            imprimeArvoreFuncionario(arquivo, cabecalho);
+            // imprimeBPlus(arquivo, cabecalho, posisaoPagina, prefixo, ehUltimo, imprimeChave);
 
             break;
         case 6:
@@ -62,7 +59,7 @@ int main() {
 
             break;
         default:
-            printf("Opção Invalida! \n");
+            erro("Opção Invalida!");
             break;
         }
     } while (opcao != 6);

@@ -24,6 +24,7 @@ typedef struct {
     long proximaFolha; 
 } PaginaBPlus;
 
+// auxiliares para tratamento da pagina
 int maxChavesPagina(CabecalhoBPlus *cabecalho, bool ehfolha);
 int metadeArredondada(CabecalhoBPlus *cabecalho);
 int minChavesPagina(CabecalhoBPlus *cabecalho, bool ehfolha);
@@ -45,14 +46,15 @@ long buscarChave(FILE *arquivoAberto, bool *encontrou, CabecalhoBPlus *cabecalho
                  int (*comparaChaves)(void *x, void *y), long *caminho, int *tam_caminho);
 
 // função responsavel pela cisão no processo de inserção.
-PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, PaginaBPlus *paginaPai, CabecalhoBPlus *cabecalho,
+PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, CabecalhoBPlus *cabecalho,
                          void *chavePromovida);
 
 // função responsavel pela insersção de uma chave na arvore                       
 bool insereChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave, const void *registro,
                  int (*comparaChaves)(void *x, void *y));
 
-// função responsável por alocar páginas em espaços livres
+
+// Função responsável para encontrar a posição que será inserido a próxima página
 long alocarPagina(FILE *arquivoAberto, CabecalhoBPlus *cabecalho);
 
 // função responsavel pela remoção de uma chave na arvore
@@ -78,4 +80,11 @@ void imprimePagina(PaginaBPlus pagina, CabecalhoBPlus *cabecalho,
 // função responsavel por imprimir a arvore sformatada                   
 void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posisaoPagina, const char *prefixo,
                   bool ehUltimo, void (*imprimeNo)(void *chave));
+int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprimeChave(void *a),
+                       void imprimeRegistro(void *a), bool imprimeCompleta);
+
+int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprimeChave(void *a),
+                       void imprimeRegistro(void *a), bool imprimeCompleta, void *registroEncontrado);
 #endif

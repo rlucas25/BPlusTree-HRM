@@ -1,16 +1,30 @@
 #include "RH.h"
+#include "Bplus.h"
+#include <stdio.h>
 
 void imprimeData(Data data) { printf("%d/%d/%d", data.dia, data.mes, data.ano); }
 
 void imprimeChave(void *f) {
 
+    // impressão das chaves de determinado funcionario
     Chave *chave = (Chave *)f;
-    printf("[ Nome: %s | Data de nascimento: ", chave->Nome);
+    printf("[Nome: %s | Data de nascimento: ", chave->Nome);
     imprimeData(chave->dataNascimento);
-    printf(" ]");
+    printf("]");
+}
+void imprimeChavePrimeiroNome(void *f) {
+    // impressão das chaves de determinado funcionario
+    Chave *chave = (Chave *)f;
+
+    int tamanho = strcspn(chave->Nome, " ");
+
+    printf("[%.*s | ", tamanho, chave->Nome);
+    imprimeData(chave->dataNascimento);
+    printf("]");
 }
 
-void imprimeFuncionario(Funcionario funcionario) {
+void imprimeFuncionario(void *f) {
+    Funcionario funcionario = *(Funcionario *)f;
 
     // Formatação da impreção dos dados.
     printf("\n| Pai: %s\n| Mãe: %s\n", funcionario.filicao.mae, funcionario.filicao.pai);
@@ -39,13 +53,19 @@ void imprimeFuncionario(Funcionario funcionario) {
     }
     printf("\n");
 }
+
 bool confereData(Data data) {
+
+    // verifica se as informações inseridas estçao corretas em relação a data atual
     if (data.dia < 1 || data.dia > 31 || data.mes < 1 || data.mes > 12 || data.ano > 2026) {
         return false;
     }
+    // verifica se as informações inseridas estçao corretas em relação ao dia do mes
     if ((data.mes == 4 || data.mes == 6 || data.mes == 9 || data.mes == 11) && data.dia > 30) {
         return false;
     }
+
+    // trata o caso do mes de fevereiro e ano bissexto.
     if (data.mes == 2) {
         if ((data.ano % 4 == 0 && data.ano % 100 != 0) || (data.ano % 400 == 0)) {
             if (data.dia > 29) {
@@ -57,6 +77,8 @@ bool confereData(Data data) {
             }
         }
     }
+
+    // não permite que esteja meses no futudo
     if (data.ano == 2026 && data.mes > 7) {
         return false;
     }
@@ -127,21 +149,26 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     // recebe os dados cadastrais do funcionario;
     while (1) {
         printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dataNascimento.dia, &funcionario.dataNascimento.mes,
-              &funcionario.dataNascimento.ano);
-        bool dataValida = confereData(funcionario.dataNascimento);
+        int lidos = scanf("%d/%d/%d", &funcionario.dataNascimento.dia,
+                          &funcionario.dataNascimento.mes, &funcionario.dataNascimento.ano);
+        // limpar buffer
+        while (getchar() != '\n')
+            ;
 
-        if (dataValida) {
-            break; // Sai do loop se a data for válida
+        if (lidos == 3) {
+            bool dataValida = confereData(funcionario.dataNascimento);
+            if (dataValida) {
+                // Sai do loop se o formato e a data forem válidos
+                break;
+            } else {
+                erro("Data inválida. Por favor, insira novamente.");
+            }
         } else {
-            erro("Data inválida. Por favor, insira novamente");
+            erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
         }
     }
 
-    // utilizado para limpar o buffer
-    while (getchar() != '\n')
-        ;
-
+    // recebe informções do usuario
     printf("Digite o nome do pai do funcionario:");
     fgets(funcionario.filicao.pai, RH_TAM_NOME, stdin);
     funcionario.filicao.pai[strcspn(funcionario.filicao.pai, "\n")] = '\0';
@@ -162,30 +189,65 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     while (1) {
         printf("Digite a data de contratacao do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataContratacao.dia,
-              &funcionario.dadosContratuais.dataContratacao.mes,
-              &funcionario.dadosContratuais.dataContratacao.ano);
+        int lidos = scanf("%d/%d/%d", &funcionario.dadosContratuais.dataContratacao.dia,
+                          &funcionario.dadosContratuais.dataContratacao.mes,
+                          &funcionario.dadosContratuais.dataContratacao.ano);
+        while (getchar() != '\n')
+            ;
 
-        bool dataValida = confereData(funcionario.dadosContratuais.dataContratacao);
-
-        if (dataValida) {
-            break; // Sai do loop se a data for válida
+        if (lidos == 3) {
+            bool dataValida = confereData(funcionario.dataNascimento);
+            if (dataValida) {
+                // Sai do loop se o formato e a data forem válidos
+                break;
+            } else {
+                erro("Data inválida. Por favor, insira novamente.");
+            }
         } else {
-            erro("Data inválida. Por favor, insira novamente");
+            erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
         }
     }
 
-    printf("Digite o status de atividade do funcionario (1 para ativo, 0 para inativo): ");
-    int aux = 0;
-    scanf("%d", &aux);
+    int aux = -1;
+    while (1) {
+        printf("Digite o status de atividade do funcionario (1 para ativo, 0 para inativo): ");
+        int lidos = scanf("%d", &aux);
+
+        // Limpa o buffer
+        while (getchar() != '\n')
+            ;
+
+        // Só aceita se leu 1 número com sucesso E se esse número for 0 ou 1
+        if (lidos == 1 && (aux == 0 || aux == 1)) {
+            break;
+        } else {
+            erro("Entrada inválida. Digite exclusivamente 1 (ativo) ou 0 (inativo).");
+        }
+    }
 
     funcionario.dadosContratuais.statusAtividade = aux > 0 ? true : false;
 
     if (funcionario.dadosContratuais.statusAtividade == 0) {
-        printf("Digite a data de desligamento do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dadosContratuais.dataDesligamento.dia,
-              &funcionario.dadosContratuais.dataDesligamento.mes,
-              &funcionario.dadosContratuais.dataDesligamento.ano);
+        while (1) {
+            printf("Digite a data de desligamento do funcionário (dd/mm/aaaa): ");
+            int lidos = scanf("%d/%d/%d", &funcionario.dadosContratuais.dataDesligamento.dia,
+                              &funcionario.dadosContratuais.dataDesligamento.mes,
+                              &funcionario.dadosContratuais.dataDesligamento.ano);
+            while (getchar() != '\n')
+                ;
+
+            if (lidos == 3) {
+                bool dataValida = confereData(funcionario.dataNascimento);
+                if (dataValida) {
+                    // Sai do loop se o formato e a data forem válidos
+                    break;
+                } else {
+                    erro("Data inválida. Por favor, insira novamente.");
+                }
+            } else {
+                erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
+            }
+        }
     } else {
         funcionario.dadosContratuais.dataDesligamento.dia = 0;
         funcionario.dadosContratuais.dataDesligamento.mes = 0;
@@ -193,12 +255,20 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     }
     printf("Digite o historico de pagamentos do funcionario (12 meses):\n");
     for (i = 0; i < 12; i++) {
-        printf("Mes %d: ", i + 1);
-        scanf("%f", &funcionario.historicoPagamentos[i]);
+        while (1) {
+            printf("Mes %d: ", i + 1);
+            int lidos = scanf("%f", &funcionario.historicoPagamentos[i]);
+            // Limpa buffer
+            while (getchar() != '\n')
+                ;
+            // se for o valor correto vai apra o próximo mês
+            if (lidos == 1) {
+                break;
+            } else {
+                erro("Valor inválido. Por favor, digite um número financeiro válido.");
+            }
+        }
     }
-    // utilizado para limpar o buffer
-    while (getchar() != '\n')
-        ;
 
     // se utiliza da função insereChave para inserir e verificar a possibilidade
     // de inserção, retornado TRUE, se foi bem sucedida, e FALSE, se mal sucedida
@@ -221,24 +291,113 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
 void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
+    // verifica a existencia dos parametros.
+    if (!arquivo || !cabecalho) {
+        // se utiliza da função de erro para formatar a mensagem apresentando erro
+        erro("Arquivo e cabecalho não criados corretamente na hora de excluir funcionario");
+        return;
+    }
+
+    Funcionario chave;
+    Funcionario existente;
+    bool removido = false;
+    bool encontrou = false;
+    long posfolha;
+    int i;
+
+    // Recebe as informações do funcionario que sera excluidp
+    printf("Digite o nome do funcionario:");
+    fgets(chave.Nome, RH_TAM_NOME, stdin);
+    chave.Nome[strcspn(chave.Nome, "\n")] = '\0';
+
+    chave.Nome[strcspn(chave.Nome, "\n")] = '\0';
+    chave.dataNascimento.dia              = 0;
+    chave.dataNascimento.mes              = 0;
+    chave.dataNascimento.ano              = 0;
+    printf("\n");
+    Funcionario encontrado;
+
+    int qtdChaves = buscarRegistro(arquivo, cabecalho, &chave, &chave, comparaNome,
+                                       imprimeChave, imprimeFuncionario, false, &encontrado);
+    if (qtdChaves <= 0) {
+        printf("Nenhum funcionário encontrado com o nome '%s'.\n", chave.Nome);
+    } else {
+        if (qtdChaves == 1) {
+            printf("Tem certeza que deseja remover: '%s'? (0.Não  1.Sim)\n>> ", chave.Nome);
+            short int aux = 1;
+            scanf("%hd", &aux);
+            while (getchar() != '\n');
+
+            if (aux >= 1){
+                removido = removeChave(arquivo, cabecalho, &encontrado, comparaChaveFuncionario);
+            } else {
+                printf("Voltando ao menu inicial....\n");
+                return;
+            }
+        } else {
+            printf("Foram encontrados %d funcionários com o nome '%s'.\n", qtdChaves, chave.Nome);
+            // recebe os dados cadastrais do funcionario
+            while (1) {
+                printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
+                int lidos = scanf("%d/%d/%d", &chave.dataNascimento.dia, &chave.dataNascimento.mes,
+                                  &chave.dataNascimento.ano);
+                // limpar buffer
+                while (getchar() != '\n');
+
+                if (lidos == 3) {
+                    bool dataValida = confereData(chave.dataNascimento);
+                    if (dataValida) {
+                        // Sai do loop se o formato e a data forem válidos
+                        break;
+                    } else {
+                        erro("Data inválida. Por favor, insira novamente.");
+                    }
+                } else {
+                    erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
+                }
+            }
+
+            removido = removeChave(arquivo, cabecalho, &chave, comparaChaveFuncionario);
+        }
+    }
+
+    // retorna uma mensagem de exito, se utilizando da função exito, para exibir
+    // a mensagem de sucesso ao usuario.
+    if (removido) {
+        exito("Funcionario removido com sucesso!");
+    } else {
+        erro("Não foi possível remover");
+    }
+}
+
+/*
+void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
+
     Funcionario funcionario;
 
     // recebe as informações do funcionario para a exclusão.
-    printf("Digite o nome do funcionario que devera ser exlcuido:");
+    printf("Digite o nome do funcionario que devera ser excluído:");
     fgets(funcionario.Nome, RH_TAM_NOME, stdin);
     funcionario.Nome[strcspn(funcionario.Nome, "\n")] = '\0';
 
-    printf("Digite a data de nascimento \n");
     while (1) {
         printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
-        scanf("%d/%d/%d", &funcionario.dataNascimento.dia, &funcionario.dataNascimento.mes,
-              &funcionario.dataNascimento.ano);
-        bool dataValida = confereData(funcionario.dataNascimento);
+        int lidos = scanf("%d/%d/%d", &funcionario.dataNascimento.dia,
+                          &funcionario.dataNascimento.mes, &funcionario.dataNascimento.ano);
+        // limpar buffer
+        while (getchar() != '\n')
+            ;
 
-        if (dataValida) {
-            break; // Sai do loop se a data for válida
+        if (lidos == 3) {
+            bool dataValida = confereData(funcionario.dataNascimento);
+            if (dataValida) {
+                // Sai do loop se o formato e a data forem válidos
+                break;
+            } else {
+                erro("Data inválida. Por favor, insira novamente.");
+            }
         } else {
-            erro("Data inválida. Por favor, insira novamente");
+            erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
         }
     }
 
@@ -258,83 +417,8 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         exito("Funcionario excluido com sucesso!");
     }
 }
-
-int auxBusca(FILE *arquivo, CabecalhoBPlus *cabecalho, Chave *chaveA, Chave *chaveB,
-             bool impressaoCompleta, int compara(void *a, void *b)) {
-    long caminho[50];
-    int tam_caminho        = 0;
-    int qtdChavesImpressas = 0;
-    bool encontrou         = false;
-    long posPag            = Nulo;
-
-    // utiliza a função buscarChave para encontrar a posição da pagina desejada
-    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
-
-    // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
-    if (posPag == Nulo || posPag == -1) {
-        erro("Árvore vazia ou erro na busca.\n");
-        return 0;
-    }
-    if (!encontrou || posPag == -1) {
-        erro("Chave não encontrada na árvore.\n");
-        return 0;
-    }
-    Funcionario funcionarioAtual;
-
-    // percorre as folhas da arvoreB+.
-    while (posPag != Nulo) {
-
-        // lê o disco se utilizando da função le_pagina_disco.
-        PaginaBPlus paginaAtual = le_pagina_disco(arquivo, posPag, cabecalho);
-
-        // percorre todas as chaves da folha atual
-        for (int i = 0; i < paginaAtual.qtdChaves; i++) {
-
-            // calcula o endereço da chave que esta na posição i da folha
-            void *chaveAtual = (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave);
-
-            // se a chave atual extrapolou o limite, parar a leitura.
-            if (compara(chaveAtual, chaveB) > 0) {
-                posPag = Nulo;
-                break;
-            }
-            if ( compara(chaveAtual, chaveA) < 0) {
-                continue;
-            }
-
-            // Guarda local atual em funcionarioAtual.
-            funcionarioAtual =
-                *(Funcionario *)((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
-
-            // imprime os dados dos funcionarios.
-            if (impressaoCompleta) {
-                imprimeChave(&funcionarioAtual);
-                imprimeFuncionario(funcionarioAtual);
-            } else {
-                imprimeChave(&funcionarioAtual);
-            }
-
-            qtdChavesImpressas++;
-        }
-        if (posPag != Nulo) {
-            posPag = paginaAtual.proximaFolha;
-        }
-
-        free(paginaAtual.chaves);
-        free(paginaAtual.ponteiros);
-    }
-    if (!impressaoCompleta) {
-        if (qtdChavesImpressas == 1) {
-            imprimeFuncionario(funcionarioAtual);
-        }
-        else {
-            printf("\n");
-        }
-    }
-    return qtdChavesImpressas;
-}
-
-void buscaIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho) {
+*/
+void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     // verifica se os parametros são validos
     if (!arquivo || !cabecalho)
@@ -348,7 +432,8 @@ void buscaIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("Digite o nome do funcionario que deseja buscar (fim do intervalo): ");
     fgets(chaveB.Nome, RH_TAM_NOME, stdin);
     chaveB.Nome[strcspn(chaveB.Nome, "\n")] = '\0';
-    auxBusca(arquivo, cabecalho, &chaveA, &chaveB, true, comparaNome);
+    buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveB, comparaNome, imprimeChave,
+                       imprimeFuncionario, true);
 }
 
 void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
@@ -365,8 +450,8 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     chaveA.dataNascimento.mes               = 0;
     chaveA.dataNascimento.ano               = 0;
     printf("\n");
-    int qtdChaves = auxBusca(arquivo, cabecalho, &chaveA, &chaveA, false, comparaNome);
-
+    int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaNome,
+                                       imprimeChave, imprimeFuncionario, false);
     if (qtdChaves == 0) {
         printf("Nenhum funcionário encontrado com o nome '%s'.\n", chaveA.Nome);
     } else {
@@ -378,7 +463,15 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                    "(dd/mm/aaaa): ");
             scanf("%d/%d/%d", &chaveA.dataNascimento.dia, &chaveA.dataNascimento.mes,
                   &chaveA.dataNascimento.ano);
-            auxBusca(arquivo, cabecalho, &chaveA, &chaveA, true, comparaChaveFuncionario);
+            buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaChaveFuncionario,
+                               imprimeChave, imprimeFuncionario, true);
         }
     }
+}
+
+void imprimeArvoreFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
+    bool ehUltimo      = false;
+    char prefixo[100]  = "";
+    long posisaoPagina = cabecalho->posRaiz;
+    imprimeBPlus(arquivo, cabecalho, posisaoPagina, prefixo, ehUltimo, imprimeChavePrimeiroNome);
 }

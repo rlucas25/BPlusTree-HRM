@@ -1237,62 +1237,74 @@ void imprimePagina(PaginaBPlus pagina, CabecalhoBPlus *cabecalho,
     printf("]");
 }
 
-void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posicaoPagina, const char *prefixo,
-                  bool ehUltimo, void (*imprimeChave)(void *chave))
+void imprimeBPlus(FILE *arquivo,
+                  CabecalhoBPlus *cabecalho,
+                  long posicaoPagina,
+                  const char *prefixo,
+                  bool ehUltimo,
+                  void (*imprimeChave)(void *chave))
 {
-
     if (posicaoPagina == Nulo)
-    {
         return;
-    }
 
     PaginaBPlus pagina = le_pagina_disco(arquivo, posicaoPagina, cabecalho);
 
-    printf("%s", prefixo);
+    bool ehRaiz = (posicaoPagina == cabecalho->posRaiz);
 
-    if (ehUltimo)
+    /* A raiz é impressa sem conectores */
+    if (ehRaiz)
     {
-        printf("└── ");
+        imprimePagina(pagina, cabecalho, imprimeChave);
+        printf("\n");
     }
     else
     {
-        printf("├── ");
+        printf("%s", prefixo);
+        printf(ehUltimo ? "└── " : "├── ");
+
+        imprimePagina(pagina, cabecalho, imprimeChave);
+        printf("\n");
     }
 
-    imprimePagina(pagina, cabecalho, imprimeChave);
-    printf("\n");
-
+    /* Imprime os filhos */
     if (!pagina.ehfolha)
     {
+        char novoPrefixo[256];
+
         for (int i = 0; i <= pagina.qtdChaves; i++)
         {
-            char novoPrefixo[256];
-            bool filhoEhUltimo = (i == pagina.qtdChaves);
+            long posFilho = ((long *)pagina.ponteiros)[i];
 
-            if (ehUltimo)
+            if (posFilho == Nulo)
+                continue;
+
+            if (ehRaiz)
             {
-                snprintf(novoPrefixo, sizeof(novoPrefixo), "%s    ", prefixo);
+                snprintf(novoPrefixo,
+                         sizeof(novoPrefixo),
+                         " ");
             }
             else
             {
-                snprintf(novoPrefixo, sizeof(novoPrefixo), "%s│   ", prefixo);
+                snprintf(novoPrefixo,
+                         sizeof(novoPrefixo),
+                         "%s%s",
+                         prefixo,
+                         ehUltimo ? "    " : "│   ");
             }
-            long posFilho = *((long *)((char *)pagina.ponteiros + (i * sizeof(long))));
 
-            // Só tenta imprimir o filho se o ponteiro for válido (diferente de Nulo/-1)
-            if (posFilho != Nulo)
-            {
-                imprimeBPlus(arquivo, cabecalho, posFilho, novoPrefixo, filhoEhUltimo,
-                             imprimeChave);
-            }
+            imprimeBPlus(
+                arquivo,
+                cabecalho,
+                posFilho,
+                novoPrefixo,
+                i == pagina.qtdChaves,
+                imprimeChave);
         }
     }
 
-    // Limpeza dos auxiliares alocados no le_pagina_disco
-    if (pagina.chaves)
-        free(pagina.chaves);
-    if (pagina.ponteiros)
-        free(pagina.ponteiros);
+    free(pagina.chaves);
+    free(pagina.ponteiros);
 }
 
 int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,

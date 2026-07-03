@@ -172,41 +172,20 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     chaveFuncionario.dataNascimento.mes = funcionario.dataNascimento.mes;
     chaveFuncionario.dataNascimento.ano = funcionario.dataNascimento.ano;
 
-    int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chaveFuncionario, &chaveFuncionario, comparaChaveFuncionario, imprimeFuncionario, false, &encontrado);
+    int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chaveFuncionario, &chaveFuncionario, comparaChaveFuncionario, imprimeFuncionario, false, &existente);
 
 
-    if ( qtdChaves >= 1 ){
-        printf("Deseja atualizar o funcionario? (0. Não  1.Sim)")
-        short int aux = 1;
-        scanf("%hd", &aux);
+    if ( qtdChaves == 1 ){
+        printf("Deseja atualizar o funcionario?\n0. Não\n1. Sim\n>> ");
+        int aux = 1;
+        scanf("%d", &aux);
         while (getchar() != '\n');
 
-        int opcao;
-        aux == 0 ? opcao = 7 : opcao = 10; 
-        while(opcao != 7){
-            printf("\n\t\t===== Escolha o que deseja atualizar =====\n"
-               "\t1. Nome\n"
-               "\t2. Data de Nascimento\n"
-               "\t3. Filiação\n"
-               "\t4. Dados de Contato\n"
-               "\t5. Dados Contrtuais\n"
-               "\t6. Historico de Pagamentos\n"
-               "\t7. Interromper atualização\n");
-
-            printf(">> ");
-            scanf("%d", &opcao);
-            // utilizado para limpar o buffer
-            while (getchar() != '\n');;
-            
-            switch(opcao){
-                case 1:
-                    
-                break;
-                default:
-                    printf("Opção inválida");
-            }
-
-
+        if (aux >= 1){
+            removeChave(arquivo, cabecalho, &chaveFuncionario, comparaChaveFuncionario);
+        }
+        else{
+            return;
         }
     }
     
@@ -253,7 +232,7 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     int aux = -1;
     while (1) {
-        printf("Digite o status de atividade do funcionario (1 para ativo, 0 para inativo): ");
+        printf("Digite o status de atividade do funcionario:\n1. Ativo\n0. Inativo ");
         int lidos = scanf("%d", &aux);
 
         // Limpa o buffer
@@ -362,7 +341,7 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         printf("Nenhum funcionário encontrado com o nome '%s'.\n", chave.Nome);
     } else {
         if (qtdChaves == 1) {
-            printf("Tem certeza que deseja remover: '%s'? (0.Não  1.Sim)\n>> ", chave.Nome);
+            printf("Tem certeza que deseja remover: '%s'?\n0. Não\n1. Sim\n>> ", chave.Nome);
             short int aux = 1;
             scanf("%hd", &aux);
             while (getchar() != '\n');
@@ -466,7 +445,7 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
 void imprimeArvoreFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     bool ehUltimo      = false;
-    char prefixo[100]  = "";
+    char prefixo[100]  = " ";
     long posisaoPagina = cabecalho->posRaiz;
     imprimeBPlus(arquivo, cabecalho, posisaoPagina, prefixo, ehUltimo, imprimeChavePrimeiroNome);
 }

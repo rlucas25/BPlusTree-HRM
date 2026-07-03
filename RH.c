@@ -232,7 +232,7 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     int aux = -1;
     while (1) {
-        printf("Digite o status de atividade do funcionario:\n1. Ativo\n0. Inativo ");
+        printf("Digite o status de atividade do funcionario:\n1. Ativo\n0. Inativo\n>>");
         int lidos = scanf("%d", &aux);
 
         // Limpa o buffer

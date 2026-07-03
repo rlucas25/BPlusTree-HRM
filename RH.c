@@ -300,7 +300,7 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     Funcionario chave;
     Funcionario existente;
-    bool removido = false;
+    bool removido  = false;
     bool encontrou = false;
     long posfolha;
     int i;
@@ -317,8 +317,8 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("\n");
     Funcionario encontrado;
 
-    int qtdChaves = buscarRegistro(arquivo, cabecalho, &chave, &chave, comparaNome,
-                                       imprimeChave, imprimeFuncionario, false, &encontrado);
+    int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chave, &chave, comparaNome, imprimeChave, false, &encontrado);
+    printf("\n");
     if (qtdChaves <= 0) {
         printf("Nenhum funcionário encontrado com o nome '%s'.\n", chave.Nome);
     } else {
@@ -326,9 +326,10 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
             printf("Tem certeza que deseja remover: '%s'? (0.Não  1.Sim)\n>> ", chave.Nome);
             short int aux = 1;
             scanf("%hd", &aux);
-            while (getchar() != '\n');
+            while (getchar() != '\n')
+                ;
 
-            if (aux >= 1){
+            if (aux >= 1) {
                 removido = removeChave(arquivo, cabecalho, &encontrado, comparaChaveFuncionario);
             } else {
                 printf("Voltando ao menu inicial....\n");
@@ -342,7 +343,8 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                 int lidos = scanf("%d/%d/%d", &chave.dataNascimento.dia, &chave.dataNascimento.mes,
                                   &chave.dataNascimento.ano);
                 // limpar buffer
-                while (getchar() != '\n');
+                while (getchar() != '\n')
+                    ;
 
                 if (lidos == 3) {
                     bool dataValida = confereData(chave.dataNascimento);
@@ -370,54 +372,7 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     }
 }
 
-/*
-void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
-    Funcionario funcionario;
-
-    // recebe as informações do funcionario para a exclusão.
-    printf("Digite o nome do funcionario que devera ser excluído:");
-    fgets(funcionario.Nome, RH_TAM_NOME, stdin);
-    funcionario.Nome[strcspn(funcionario.Nome, "\n")] = '\0';
-
-    while (1) {
-        printf("Digite a data de nascimento do funcionário (dd/mm/aaaa): ");
-        int lidos = scanf("%d/%d/%d", &funcionario.dataNascimento.dia,
-                          &funcionario.dataNascimento.mes, &funcionario.dataNascimento.ano);
-        // limpar buffer
-        while (getchar() != '\n')
-            ;
-
-        if (lidos == 3) {
-            bool dataValida = confereData(funcionario.dataNascimento);
-            if (dataValida) {
-                // Sai do loop se o formato e a data forem válidos
-                break;
-            } else {
-                erro("Data inválida. Por favor, insira novamente.");
-            }
-        } else {
-            erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
-        }
-    }
-
-    // inicialização das variaveis que serão utilizadas posteriormente.
-    Chave chaveFuncionario;
-    strcpy(chaveFuncionario.Nome, funcionario.Nome);
-    chaveFuncionario.dataNascimento.dia = funcionario.dataNascimento.dia;
-    chaveFuncionario.dataNascimento.mes = funcionario.dataNascimento.mes;
-    chaveFuncionario.dataNascimento.ano = funcionario.dataNascimento.ano;
-
-    // utiliza a função removeChave para remover e verificar a possibilidade de remoção do usuario
-    // retornando um valor booleano de acordo com o resultado.
-    bool encontrou = removeChave(arquivo, cabecalho, &chaveFuncionario, comparaChaveFuncionario);
-
-    if (encontrou) {
-
-        exito("Funcionario excluido com sucesso!");
-    }
-}
-*/
 void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     // verifica se os parametros são validos
@@ -432,8 +387,8 @@ void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("Digite o nome do funcionario que deseja buscar (fim do intervalo): ");
     fgets(chaveB.Nome, RH_TAM_NOME, stdin);
     chaveB.Nome[strcspn(chaveB.Nome, "\n")] = '\0';
-    buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveB, comparaNome, imprimeChave,
-                       imprimeFuncionario, true);
+    Funcionario funcionario;
+    buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaNome, imprimeFuncionario, false, &funcionario);
 }
 
 void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
@@ -443,19 +398,22 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         erro("Parametros invalidos passados para buscaFuncionario");
 
     Chave chaveA;
+    Funcionario funcionario;
     printf("Digite o nome do funcionario que deseja buscar: ");
     fgets(chaveA.Nome, RH_TAM_NOME, stdin);
     chaveA.Nome[strcspn(chaveA.Nome, "\n")] = '\0';
+    strcpy(funcionario.Nome, chaveA.Nome);
     chaveA.dataNascimento.dia               = 0;
     chaveA.dataNascimento.mes               = 0;
     chaveA.dataNascimento.ano               = 0;
     printf("\n");
     int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaNome,
-                                       imprimeChave, imprimeFuncionario, false);
+                                       imprimeChave, true, &funcionario);
     if (qtdChaves == 0) {
         printf("Nenhum funcionário encontrado com o nome '%s'.\n", chaveA.Nome);
     } else {
         if (qtdChaves == 1) {
+            imprimeFuncionario(&funcionario);
             return;
         } else {
             printf("Foram encontrados %d funcionários com o nome '%s'.\n", qtdChaves, chaveA.Nome);
@@ -463,8 +421,7 @@ void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                    "(dd/mm/aaaa): ");
             scanf("%d/%d/%d", &chaveA.dataNascimento.dia, &chaveA.dataNascimento.mes,
                   &chaveA.dataNascimento.ano);
-            buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaChaveFuncionario,
-                               imprimeChave, imprimeFuncionario, true);
+            buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveA, comparaChaveFuncionario, imprimeFuncionario, false, &funcionario);
         }
     }
 }

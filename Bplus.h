@@ -80,11 +80,8 @@ void imprimePagina(PaginaBPlus pagina, CabecalhoBPlus *cabecalho,
 // função responsavel por imprimir a arvore sformatada                   
 void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posisaoPagina, const char *prefixo,
                   bool ehUltimo, void (*imprimeNo)(void *chave));
-int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
-                       int compara(void *a, void *b), void imprimeChave(void *a),
-                       void imprimeRegistro(void *a), bool imprimeCompleta);
 
-int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
-                       int compara(void *a, void *b), void imprimeChave(void *a),
-                       void imprimeRegistro(void *a), bool imprimeCompleta, void *registroEncontrado);
+int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprime(void *a), bool ehChave,
+                       void *registroEncontrado);
 #endif

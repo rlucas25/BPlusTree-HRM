@@ -110,7 +110,7 @@ PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalh
     if (!pagina.ponteiros) {
         erro("Falha de alocacao para ponteiros em le_pagina_disco\n");
         free(pagina.chaves);
-        pagina.chaves = NULL;
+        pagina.chaves    = NULL;
         pagina.qtdChaves = 0;
         return pagina;
     }
@@ -229,88 +229,6 @@ long buscarChave(FILE *arquivoAberto, bool *encontrou, CabecalhoBPlus *cabecalho
     }
     printf("Erro na Busca");
     return -1;
-}
-
-int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
-                       int compara(void *a, void *b), void imprimeChave(void *a),
-                       void imprimeRegistro(void *a), bool imprimeCompleta) {
-
-    if (!arquivo || !cabecalho || !chaveA || !chaveB || !compara || !imprimeChave ||
-        !imprimeRegistro) {
-        erro("Parametros invalidos passados para buscarPorIntervalo");
-        return -1;
-    }
-
-    long caminho[50];
-    int tam_caminho        = 0;
-    int qtdChavesImpressas = 0;
-    bool encontrou         = false;
-    long posPag            = Nulo;
-
-    // utiliza a função buscarChave para encontrar a posição da pagina desejada
-    posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
-
-    // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
-    if (posPag == Nulo || posPag == -1) {
-        erro("Árvore vazia ou erro na busca.\n");
-        return 0;
-    }
-    char registroAux[cabecalho->tamanhoRegistro];
-
-    PaginaBPlus paginaAtual;
-
-    // percorre as folhas da arvoreB+.
-    while (posPag != Nulo) {
-
-        // lê o disco se utilizando da função le_pagina_disco.
-        paginaAtual = le_pagina_disco(arquivo, posPag, cabecalho);
-
-        // percorre todas as chaves da folha atual
-        for (int i = 0; i < paginaAtual.qtdChaves; i++) {
-
-            // calcula o endereço da chave que esta na posição i da folha
-            void *chaveAtual = (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave);
-
-            // se a chave atual extrapolou o limite, parar a leitura.
-            if (compara(chaveAtual, chaveB) > 0) {
-                posPag = Nulo;
-                break;
-            }
-            if (compara(chaveAtual, chaveA) < 0) {
-                continue;
-            }
-
-            // Guarda local atual do registro.
-            void *registroAtual = ((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
-
-            qtdChavesImpressas++;
-            memcpy(registroAux,registroAtual,cabecalho->tamanhoRegistro);
-            // imprime os dados da chave
-            if (imprimeCompleta) {
-                imprimeChave(chaveAtual);
-                imprimeRegistro(registroAtual);
-            } else {
-                imprimeChave(chaveAtual);
-            }
-        }
-        
-        
-        if (posPag != Nulo) {
-            posPag = paginaAtual.proximaFolha;
-        }
-        if (paginaAtual.chaves)
-            free(paginaAtual.chaves);
-        if (paginaAtual.ponteiros)
-            free(paginaAtual.ponteiros);
-    }
-    
-    if (!imprimeCompleta && qtdChavesImpressas == 1) {
-        imprimeRegistro((void *)registroAux);
-    }
-    printf("\n");
-    
-    
-    return qtdChavesImpressas;
 }
 
 PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, CabecalhoBPlus *cabecalho, void *chavePromovida) {
@@ -1247,13 +1165,11 @@ void imprimeBPlus(FILE *arquivo, CabecalhoBPlus *cabecalho, long posicaoPagina, 
         free(pagina.ponteiros);
 }
 
+int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
+                       int compara(void *a, void *b), void imprime(void *a), bool ehChave,
+                       void *registroEncontrado) {
 
-int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void *chaveB,
-                       int compara(void *a, void *b), void imprimeChave(void *a),
-                       void imprimeRegistro(void *a), bool imprimeCompleta, void *registroEncontrado) {
-
-    if (!arquivo || !cabecalho || !chaveA || !chaveB || !compara || !imprimeChave ||
-        !imprimeRegistro) {
+    if (!arquivo || !cabecalho || !chaveA || !chaveB || !compara || !imprime) {
         erro("Parametros invalidos passados para buscarPorIntervalo");
         return -1;
     }
@@ -1298,20 +1214,19 @@ int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void 
             }
 
             // Guarda local atual do registro.
-            void *registroAtual = ((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
+            void *registroAtual =
+                ((char *)paginaAtual.ponteiros + (i * cabecalho->tamanhoRegistro));
 
             qtdChavesImpressas++;
-            memcpy(registroAux,registroAtual,cabecalho->tamanhoRegistro);
+            memcpy(registroAux, registroAtual, cabecalho->tamanhoRegistro);
             // imprime os dados da chave
-            if (imprimeCompleta) {
-                imprimeChave(chaveAtual);
-                imprimeRegistro(registroAtual);
+            if (ehChave) {
+                imprime(chaveAtual);
             } else {
-                imprimeChave(chaveAtual);
+                imprime(registroAtual);
             }
         }
-        
-        
+
         if (posPag != Nulo) {
             posPag = paginaAtual.proximaFolha;
         }
@@ -1320,14 +1235,11 @@ int buscarRegistro(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, void 
         if (paginaAtual.ponteiros)
             free(paginaAtual.ponteiros);
     }
-    
-    if (!imprimeCompleta && qtdChavesImpressas == 1) {
-        imprimeRegistro((void *)registroAux);
-        if (registroEncontrado)
+
+    if (qtdChavesImpressas == 1) {
         memcpy(registroEncontrado, registroAux, cabecalho->tamanhoRegistro);
     }
     printf("\n");
-    
-    
+
     return qtdChavesImpressas;
 }

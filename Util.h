@@ -3,9 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// função responsavel por exibir mensagem de erro
+
+/**
+ * @brief Exibe mensagem de erro personalizada para usuario
+ * 
+ * @details A mensagem é exibida em uma tonalidade de vermelho
+ * @param mensagem Ponteiro para mensagem que sera exibida
+ */
 void erro(const char *mensagem);
-// função responsavel por exibir mensagem de sucesso
+
+
+/**
+ * @brief Exibe mensagem de êxito (sucesso) personalizada para usuario
+ * 
+ * @details A mensagem é exibida em uma tonalidade de Verde
+ * @param mensagem Ponteiro para mensagem que sera exibida
+ */
 void exito(const char *mensagem);
-// função responsavel por alocar memória de forma segura
+
+
+/**
+ * @brief Realiza a alocação e verifica se a alocação foi 
+ *        feita corretamente
+ * 
+ * @param nbytes quantidade de bytes que serão alocados no proecesso 
+ */
 void *mallocSafe(size_t nbytes);

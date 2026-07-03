@@ -152,8 +152,7 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         int lidos = scanf("%d/%d/%d", &funcionario.dataNascimento.dia,
                           &funcionario.dataNascimento.mes, &funcionario.dataNascimento.ano);
         // limpar buffer
-        while (getchar() != '\n')
-            ;
+        while (getchar() != '\n');
 
         if (lidos == 3) {
             bool dataValida = confereData(funcionario.dataNascimento);
@@ -167,6 +166,50 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
             erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
         }
     }
+    Chave chaveFuncionario;
+    strcpy(chaveFuncionario.Nome, funcionario.Nome);
+    chaveFuncionario.dataNascimento.dia = funcionario.dataNascimento.dia;
+    chaveFuncionario.dataNascimento.mes = funcionario.dataNascimento.mes;
+    chaveFuncionario.dataNascimento.ano = funcionario.dataNascimento.ano;
+
+    int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chaveFuncionario, &chaveFuncionario, comparaChaveFuncionario, imprimeFuncionario, false, &encontrado);
+
+
+    if ( qtdChaves >= 1 ){
+        printf("Deseja atualizar o funcionario? (0. Não  1.Sim)")
+        short int aux = 1;
+        scanf("%hd", &aux);
+        while (getchar() != '\n');
+
+        int opcao;
+        aux == 0 ? opcao = 7 : opcao = 10; 
+        while(opcao != 7){
+            printf("\n\t\t===== Escolha o que deseja atualizar =====\n"
+               "\t1. Nome\n"
+               "\t2. Data de Nascimento\n"
+               "\t3. Filiação\n"
+               "\t4. Dados de Contato\n"
+               "\t5. Dados Contrtuais\n"
+               "\t6. Historico de Pagamentos\n"
+               "\t7. Interromper atualização\n");
+
+            printf(">> ");
+            scanf("%d", &opcao);
+            // utilizado para limpar o buffer
+            while (getchar() != '\n');;
+            
+            switch(opcao){
+                case 1:
+                    
+                break;
+                default:
+                    printf("Opção inválida");
+            }
+
+
+        }
+    }
+    
 
     // recebe informções do usuario
     printf("Digite o nome do pai do funcionario:");
@@ -272,11 +315,6 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
     // se utiliza da função insereChave para inserir e verificar a possibilidade
     // de inserção, retornado TRUE, se foi bem sucedida, e FALSE, se mal sucedida
-    Chave chaveFuncionario;
-    strcpy(chaveFuncionario.Nome, funcionario.Nome);
-    chaveFuncionario.dataNascimento.dia = funcionario.dataNascimento.dia;
-    chaveFuncionario.dataNascimento.mes = funcionario.dataNascimento.mes;
-    chaveFuncionario.dataNascimento.ano = funcionario.dataNascimento.ano;
     encontrou =
         insereChave(arquivo, cabecalho, &chaveFuncionario, &funcionario, comparaChaveFuncionario);
 
@@ -359,7 +397,6 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                     erro("Formato incorreto. Utilize apenas números no formato dd/mm/aaaa.");
                 }
             }
-            imprimeChave(&chave);
             removido = removeChave(arquivo, cabecalho, &chave, comparaChaveFuncionario);
         }
     }

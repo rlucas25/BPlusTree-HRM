@@ -275,21 +275,8 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         funcionario.dadosContratuais.dataDesligamento.mes = 0;
         funcionario.dadosContratuais.dataDesligamento.ano = 0;
     }
-    printf("Digite o historico de pagamentos do funcionario (12 meses):\n");
     for (i = 0; i < 12; i++) {
-        while (1) {
-            printf("Mes %d: ", i + 1);
-            int lidos = scanf("%f", &funcionario.historicoPagamentos[i]);
-            // Limpa buffer
-            while (getchar() != '\n')
-                ;
-            // se for o valor correto vai apra o próximo mês
-            if (lidos == 1) {
-                break;
-            } else {
-                erro("Valor inválido. Por favor, digite um número financeiro válido.");
-            }
-        }
+        funcionario.historicoPagamentos[i] = 0;
     }
 
     // se utiliza da função insereChave para inserir e verificar a possibilidade

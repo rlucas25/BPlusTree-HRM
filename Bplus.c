@@ -1,3 +1,10 @@
+// Turma: 3704.1
+// Grupo 14
+// DENNIS FRANCISCO GUIMARÃES DE OLIVEIRA BARACHO; 2024200496
+// HEITOR SANTOS MAIA; 2024200498
+// LUCAS REBOUÇAS ALMEIDA; 2024200501
+// MARCOS VINÍCIUS PIMENTEL GOMES; 2024200500
+
 #include "Bplus.h"
 #include <stdio.h>
 #include <string.h>
@@ -54,11 +61,11 @@ bool criaArvore(const char *nomeArquivo, int ordem, size_t tamanhoChave, size_t 
     cabecalho.tamanhoRegistro = tamanhoRegistro;
     cabecalho.proxNolivre = Nulo;
 
-    // move o ponteiro do arquivo para o inicio
+    // Move o ponteiro do arquivo para o inicio com "fseek".
     fseek(arquivo, 0, SEEK_SET);
-    // grava o cabecalho no arquivo
+    // Grava o cabecalho da árvore B+ no arquivo.
     size_t gravados = fwrite(&cabecalho, sizeof(CabecalhoBPlus), 1, arquivo);
-    // fecha o arquivo para salvar informações
+    // Fecha o arquivo para salvar informações.
     fclose(arquivo);
     return (gravados > 0);
 }
@@ -68,10 +75,11 @@ FILE *abrirArvore(const char *nomeArquivo, CabecalhoBPlus *cabecalho)
 
     if (!nomeArquivo || !cabecalho)
     {
-        erro("Parametros invalidos passados para abrirArvore");
+        erro("Parâmetros inválidos passados para abrirArvore");
         return NULL;
     }
 
+    // O arquivo é aberto com "rb+" para que esteja apto a leitura e escrita.
     FILE *arquivo = fopen(nomeArquivo, "rb+");
 
     if (!arquivo)
@@ -80,8 +88,9 @@ FILE *abrirArvore(const char *nomeArquivo, CabecalhoBPlus *cabecalho)
         return NULL;
     }
 
-    // move o ponteiro para a posição inicial do arquivo
+    // Move o ponteiro para a posição inicial do arquivo.
     fseek(arquivo, 0, SEEK_SET);
+    // Realiza a leitura do cabeçalho da árvore B+.
     fread(cabecalho, sizeof(CabecalhoBPlus), 1, arquivo);
 
     return arquivo;
@@ -98,7 +107,7 @@ void fecharArvore(FILE *arquivoAberto)
     fclose(arquivoAberto);
 }
 
-// lendo a página para não integrar a os ponteiros void na leitura do read dele.
+// Lendo a página para não integrar a os ponteiros void na leitura do read dele.
 PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalho)
 {
 
@@ -144,13 +153,13 @@ PaginaBPlus le_pagina_disco(FILE *arquivo, long offset, CabecalhoBPlus *cabecalh
 
     if (pagina.ehfolha)
     {
-        // se for folha carrega os registros
+        // Se for folha carrega seus registros.
         fread(pagina.ponteiros, cabecalho->tamanhoRegistro,
               maxChavesPagina(cabecalho, pagina.ehfolha) + 1, arquivo);
     }
     else
     {
-        // Se for nó interno carrega os ponteiros/offsets dos filhos
+        // Se for nó interno carrega os ponteiros/offsets dos filhos.
         fread(pagina.ponteiros, sizeof(long), maxChavesPagina(cabecalho, pagina.ehfolha) + 1,
               arquivo);
     }
@@ -224,10 +233,11 @@ long buscarChave(FILE *arquivoAberto, bool *encontrou, CabecalhoBPlus *cabecalho
 
     while (posicaoAtual != Nulo)
     {
-
+        // recupera a pagina do disco e leva para RAM
         PaginaBPlus paginaAtual = le_pagina_disco(arquivoAberto, posicaoAtual, cabecalho);
         i = 0;
-
+        
+        // percorre a pagina para encontrar a posição ideal
         while (i < paginaAtual.qtdChaves &&
                comparaChaves(chave, (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave)) >
                    0)
@@ -238,6 +248,7 @@ long buscarChave(FILE *arquivoAberto, bool *encontrou, CabecalhoBPlus *cabecalho
         if (paginaAtual.ehfolha)
         {
 
+            // se encontrou retorna true, se não, retorna false
             if (i < paginaAtual.qtdChaves &&
                 comparaChaves(chave, (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave)) ==
                     0)
@@ -288,6 +299,7 @@ PaginaBPlus *cisaoPagina(PaginaBPlus *pagina, CabecalhoBPlus *cabecalho, void *c
     novaPagina->qtdChaves = 0;
     novaPagina->proximaFolha = Nulo;
 
+    // aloca o local usando calculo para achar o tamannho ideal
     novaPagina->chaves =
         mallocSafe((maxChavesPagina(cabecalho, novaPagina->ehfolha) + 1) * cabecalho->tamanhoChave);
     if (novaPagina->ehfolha)
@@ -464,7 +476,7 @@ bool insereChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave, co
     int i = paginaAtual.qtdChaves - 1;
     while (i >= 0)
     {
-        // Pega a chave atual e compara com a nova chave, garante que a
+        // Pega a chave atual e compara com a nova chave, isso garante que a
         // a inserção acontecerá de forma que as chaves estejam em
         // ordem crescente
         void *chaveAtual = (char *)paginaAtual.chaves + (i * cabecalho->tamanhoChave);
@@ -848,15 +860,15 @@ bool removeChave(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, void *chave,
     {
         // Posição da chave que foi apagada
         void *destinoChave = (char *)folha.chaves + (indice * cabecalho->tamanhoChave);
+        
         // Descobrir onde começa o bloco de chaves que precisa ser arrastado para a
         // esquerda, ou seja, uma a direita da que foi apagada
         void *origemChave = (char *)folha.chaves + ((indice + 1) * cabecalho->tamanhoChave);
+
         // O Deslocamento das Chaves:
         // Primeiro - pega os dados começando da chave que está à direita
-        // Segundo - arrasta/cola eles por cima do buraco (sobrescrevendo a chave
-        // antiga)... Terceiro - Ele copia e empurra a quantidade de
-        // numElementosParaDeslocar, ou seja a quantidade das casas a direita,
-        // copiando a quantidade exata de bytes que essas chaves ocupam.
+        // Segundo - arrasta/cola eles por cima do buraco (sobrescrevendo a chave antiga)
+        // Terceiro - Ele copia e empurra a quantidade de numElementosParaDeslocar
         memmove(destinoChave, origemChave, numElementosParaDeslocar * cabecalho->tamanhoChave);
         // OBS: Fica sobrando uma chave a mais no final, mas não é problema, pois
         // após o if colocamos um folha.qtdChaves--; ditando q a última chave não
@@ -1088,14 +1100,13 @@ void BalancearArvoreUnderflow(FILE *arquivoAberto, CabecalhoBPlus *cabecalho, lo
                 // Começa na chave imediatamente à direita da que vai ser retirada
                 // (idxChaveRemover + 1) O local da chave que vai ser retirada
                 // (idxChaveRemover) O memmove pega as chaves que precisam remover e
-                // puxam para esquerda sobrepondo, por exemplo, o C0 foi tirado C0,C1,C2
-                // -> C1,C2,C2,
+                // puxam para esquerda sobrepondo, por exemplo, o C0 foi tirado C0,C1,C2 -> C1,C2,C2
                 memmove((char *)pai.chaves + (idxChaveRemover * cabecalho->tamanhoChave),
                         (char *)pai.chaves + ((idxChaveRemover + 1) * cabecalho->tamanhoChave),
                         numElementosMover * cabecalho->tamanhoChave);
 
-                // Faz a mesma coisa que a anterior, porém para os ponteiros e não as
-                // chaves, P0,P1,P2,P3 -> P0,P1,P3,P3
+                // Faz a mesma coisa que a anterior, porém para os ponteiros e não as chaves
+                // P0,P1,P2,P3 -> P0,P1,P3,P3
                 memmove((long *)pai.ponteiros + idxFilhoAtual,
                         (long *)pai.ponteiros + (idxFilhoAtual + 1),
                         numElementosMover * sizeof(long));
@@ -1328,9 +1339,8 @@ int buscarPorIntervalo(FILE *arquivo, CabecalhoBPlus *cabecalho, void *chaveA, v
     posPag = buscarChave(arquivo, &encontrou, cabecalho, chaveA, compara, caminho, &tam_caminho);
 
     // verifica se a chave foi encontrada, se não, retorna um aviso ao usuario.
-    if (posPag == Nulo || posPag == -1)
+    if (posPag == Nulo)
     {
-        erro("Árvore vazia ou erro na busca.\n");
         return 0;
     }
     char registroAux[cabecalho->tamanhoRegistro];

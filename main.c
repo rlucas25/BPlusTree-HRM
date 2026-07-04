@@ -1,3 +1,10 @@
+// Turma: 3704.1
+// Grupo 14
+// DENNIS FRANCISCO GUIMARÃES DE OLIVEIRA BARACHO; 2024200496
+// HEITOR SANTOS MAIA; 2024200498
+// LUCAS REBOUÇAS ALMEIDA; 2024200501
+// MARCOS VINÍCIUS PIMENTEL GOMES; 2024200500
+
 #include "Bplus.h"
 #include "RH.h"
 
@@ -6,9 +13,9 @@ int main() {
     int opcao;
     CabecalhoBPlus *cabecalho = mallocSafe(sizeof(CabecalhoBPlus));
     FILE *arquivo             = NULL;
-    // Cria a arvore B+ para armazenar os funcionarios, caso ela não exista e abre
-    // o arquivo para manipulação
+    // Abre o arquivo para manipulação.
     FILE *testeExistencia = fopen(NOME_ARQUIVO, "rb");
+    // Caso a árvore não exista, cria a arvore B+ para armazenar os funcionarios.
     if (!testeExistencia) {
         criaArvore(NOME_ARQUIVO, ORDEM_P, sizeof(Chave), sizeof(Funcionario));
     } else {
@@ -17,6 +24,7 @@ int main() {
     }
     arquivo = abrirArvore(NOME_ARQUIVO, cabecalho);
 
+    // Exibe o menu enquanto o usuário não digitar '6'.
     do {
         printf("\n\t===== MENU =====\n"
                "1. Inserir Funcionário\n"
@@ -28,7 +36,7 @@ int main() {
 
         printf(">> ");
         scanf("%d", &opcao);
-        // utilizado para limpar o buffer
+        // Função getchar() utilizada para limpeza do buffer
         while (getchar() != '\n');
 
         switch (opcao) {
@@ -42,6 +50,8 @@ int main() {
             excluirFuncionario(arquivo, cabecalho);
             break;
         case 4:
+            // Inicializa as variáveis necessárias para definição 
+            // do intervalo a ser utilizado na busca.
             char inicioIntervalo[RH_TAM_NOME], fimIntervalo[RH_TAM_NOME];
             buscaIntervaloFuncionario(arquivo, cabecalho);
 

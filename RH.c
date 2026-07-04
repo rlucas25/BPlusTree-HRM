@@ -315,13 +315,13 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         }
     }
 
-    // se utiliza da função insereChave para inserir e verificar a possibilidade
-    // de inserção, retornado TRUE, se foi bem sucedida, e FALSE, se mal sucedida
+    // Se utiliza da função insereChave para inserir e verificar a possibilidade
+    // de inserção, retornado TRUE, se foi bem sucedida, e FALSE, se mal sucedida.
     encontrou =
         insereChave(arquivo, cabecalho, &chaveFuncionario, &funcionario, comparaChaveFuncionario);
 
-    // retorna uma mensagem de exito, se utilizando da função exito, para exibir
-    // a mensagem de sucesso ao usuario.
+    // Retorna uma mensagem de êxito caso a inserção tenha sido bem sucedida,
+    // do contrário, reporta erro no cadastro.
     if (encontrou) {
         exito("Funcionario cadastrado com sucesso!");
     } else {
@@ -331,9 +331,9 @@ void cadastrarFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
 void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
-    // verifica a existencia dos parametros.
+    // Verifica a existência dos parâmetros.
     if (!arquivo || !cabecalho) {
-        // se utiliza da função de erro para formatar a mensagem apresentando erro
+        // Se utiliza da função de erro para formatar a mensagem apresentando erro.
         erro("Arquivo e cabecalho não criados corretamente na hora de excluir funcionario");
         return;
     }
@@ -345,7 +345,7 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     long posfolha;
     int i;
 
-    // Recebe as informações do funcionario que sera excluidp
+    // Recebe as informações do funcionário que será excluído.
     printf("Digite o nome do funcionario:");
     fgets(chave.Nome, RH_TAM_NOME, stdin);
     chave.Nome[strcspn(chave.Nome, "\n")] = '\0';
@@ -357,13 +357,19 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     printf("\n");
     Funcionario encontrado;
 
+    // Realiza busca por funcionários com o nome e ano de nascimento
+    // inserido pelo usuário.
     int qtdChaves = buscarPorIntervalo(arquivo, cabecalho, &chave, &chave, comparaNome,
                                        imprimeChave, false, &encontrado);
 
     printf("\n");
+    // Caso não encontre nenhum funcionário com o respectivo nome 
+    // e data de nascimento, informa ao usuário.
     if (qtdChaves <= 0) {
         printf("Nenhum funcionário encontrado com o nome '%s'.\n", chave.Nome);
     } else {
+        // Caso encontre um único funcionário com o nome e a data de nascimento
+        // correspondente, pergunta se o usuário deseja realmente removê-lo.
         if (qtdChaves == 1) {
             printf("Tem certeza que deseja remover: '%s'?\n0. Não\n1. Sim\n>> ", chave.Nome);
             short int aux = 1;
@@ -379,6 +385,8 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                 return;
             }
         } else {
+            // Caso haja mais de 1 funcionário com essas informações, verifica
+            // qual o usuário deseja excluir.
             printf("Foram encontrados %d funcionários com o nome '%s'.\n", qtdChaves, chave.Nome);
             // recebe os dados cadastrais do funcionario
             while (1) {
@@ -391,7 +399,7 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
                 if (lidos == 3) {
                     bool dataValida = confereData(chave.dataNascimento);
                     if (dataValida) {
-                        // Sai do loop se o formato e a data forem válidos
+                        // Sai do loop de verificação de data se o formato e a data forem válidos.
                         break;
                     } else {
                         erro("Data inválida. Por favor, insira novamente.");
@@ -404,8 +412,8 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
         }
     }
 
-    // retorna uma mensagem de exito, se utilizando da função exito, para exibir
-    // a mensagem de sucesso ao usuario.
+    // Retorna uma mensagem de exito caso a remoção tenha sido bem sucedida.
+    // Do contrário, informa exceção de erro na remoção.
     if (removido) {
         exito("Funcionario removido com sucesso!");
     } else {
@@ -415,12 +423,14 @@ void excluirFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
 void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
-    // verifica se os parametros são validos
+    // Verifica se os parametros são válidos.
     if (!arquivo || !cabecalho)
         erro("Parametros invalidos passados para buscaIntervalo");
 
     Chave chaveA, chaveB;
 
+    // Obtém oss nomes dos funcionários que serão limite 
+    // inferior e superior, repectivamente.
     printf("Digite o nome do funcionario que deseja buscar (inicio do intervalo): ");
     fgets(chaveA.Nome, RH_TAM_NOME, stdin);
     chaveA.Nome[strcspn(chaveA.Nome, "\n")] = '\0';
@@ -428,13 +438,14 @@ void buscaIntervaloFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
     fgets(chaveB.Nome, RH_TAM_NOME, stdin);
     chaveB.Nome[strcspn(chaveB.Nome, "\n")] = '\0';
     Funcionario funcionario;
+    // Realiza a busca por intervalo.
     buscarPorIntervalo(arquivo, cabecalho, &chaveA, &chaveB, comparaNome, imprimeFuncionario, false,
                        &funcionario);
 }
 
 void buscaFuncionario(FILE *arquivo, CabecalhoBPlus *cabecalho) {
 
-    // verifica se os parametros são validos
+    // Verifica se os parametros são válidos.
     if (!arquivo || !cabecalho)
         erro("Parametros invalidos passados para buscaFuncionario");
 
